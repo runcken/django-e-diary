@@ -2,15 +2,19 @@ import argparse
 import os
 import random
 import sys
-from datetime import date, timedelta
+from datetime import date
 
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
 django.setup()
 
-from datacenter.models import Schoolkid, Mark, Chastisement
-from datacenter.models import Subject, Lesson, Commendation
+from datacenter.models import (
+    Schoolkid,
+    Mark, Chastisement,
+    Subject, Lesson,
+    Commendation
+)
 
 
 commendations = (
@@ -25,7 +29,7 @@ commendations = (
     'Именно этого я давно ждал от тебя!',
     'Сказано здорово – просто и ясно!',
     'Ты, как всегда, точен!',
-    'Очень хороший ответ!,'
+    'Очень хороший ответ!',
     'Талантливо!',
     'Ты сегодня прыгнул выше головы!',
     'Я поражен!'
@@ -60,40 +64,34 @@ def find_kid(schoolkid):
 
 
 def fix_marks(kid):
-    kid_marks = Mark.objects.filter(schoolkid=kid, points__lt=4)
-    for kid_mark in kid_marks:
-        kid_mark.points = 5
-        kid_mark.save()
+    Mark.objects.filter(schoolkid=kid, points__lt=4).update(points=5)
 
 
 def remove_chastisements(kid):
-    kid_reprovals = Chastisement.objects.filter(schoolkid=kid)
-    for kid_reproval in kid_reprovals:
-        kid_reproval.delete()
+    Chastisement.objects.filter(schoolkid=kid).delete()
 
 
-def create_commendation(kid, subject, commendations, today, find_lesson_days):
-    for day in range(find_lesson_days):
-        find_lesson_date = (today - timedelta(days=day)).strftime('%Y-%m-%d')
-        lesson = Lesson.objects.filter(
-            year_of_study__contains=kid.year_of_study,
-            group_letter__contains=kid.group_letter,
-            subject=subject,
-            date=find_lesson_date
+def get_subject(kid):
+    subject = random.choice(
+        Subject.objects.filter(year_of_study=kid.year_of_study)
         )
-        if lesson.exists():
-            found_lesson = lesson.first()
-            break
+    return subject
 
-    if not found_lesson:
-        return
+
+def create_commendation(kid, subject, commendations, today):
+    lesson = Lesson.objects.filter(
+        year_of_study__contains=kid.year_of_study,
+        group_letter__contains=kid.group_letter,
+        subject=subject,
+        date__lt=today
+    ).order_by('-date').first()
 
     Commendation.objects.create(
         text=random.choice(commendations),
-        created=found_lesson.date,
+        created=lesson.date,
         schoolkid=kid,
         subject=subject,
-        teacher=found_lesson.teacher
+        teacher=lesson.teacher
     )
 
 
@@ -109,13 +107,9 @@ def limiting_commendation_number(kid):
 if __name__ == '__main__':
     schoolkid = get_argument()
     kid = find_kid(schoolkid)
-    subject = random.choice(
-        Subject.objects.filter(year_of_study=kid.year_of_study)
-        )
     today = date.today().strftime('%y-%m-%d')
-    find_lesson_days = 14
-    found_lesson = None
+    subject = get_subject(kid)
     fix_marks(kid)
     remove_chastisements(kid)
-    create_commendation(kid, subject, commendations, today, find_lesson_days)
+    create_commendation(kid, subject, commendations, today)
     limiting_commendation_number(kid)
