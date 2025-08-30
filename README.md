@@ -3,8 +3,8 @@
 This script:
 - update all schoolkid's marks less then '4' for '5',
 - remove all schoolkid's chastisements,
-- add random commendation for random last subject in schoolkid's schedule,
-- limit number of commendations (for 15) by removing old commendations
+- add random commendation for last subject's lesson in schoolkid's schedule,
+- limits number of commendations (for 15) by removing old commendations.
 
 ## How to install
 
@@ -31,13 +31,14 @@ _environs==14.2.*_
 After that you can run script using this command:
 
 ```bash
-python scripts.py
+python scripts.py Subject
 ```
 
+where 'Subject' is your selected subject(required) for commendation.
 Its possible to run script with schoolkid's name you need adding argument in console like:
 
 ```bash
-python scripts.py --full_name 'schoolkid's name'
+python scripts.py Subject --full_name 'schoolkid's name'
 ```
 
 
