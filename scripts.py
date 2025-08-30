@@ -36,10 +36,15 @@ commendations = (
 )
 
 
-def get_argument():
+def get_arguments():
     parser = argparse.ArgumentParser(
         description='Правка успехов ученика'
     )
+
+    parser.add_argument(
+        'subject_name',
+        type=str,
+        help='Название предмета для похвалы')
 
     parser.add_argument(
         '--full_name',
@@ -48,9 +53,7 @@ def get_argument():
         help='Имя ученика'
     )
 
-    args = parser.parse_args()
-    kid_name = args.full_name
-    return kid_name
+    return parser.parse_args()
 
 
 def find_kid(schoolkid):
@@ -71,17 +74,21 @@ def remove_chastisements(kid):
     Chastisement.objects.filter(schoolkid=kid).delete()
 
 
-def get_subject(kid):
-    subject = random.choice(
-        Subject.objects.filter(year_of_study=kid.year_of_study)
-        )
+def get_subject(kid, arg_subject):
+    try:
+        subject = Subject.objects.get(
+            title__contains=arg_subject,
+            year_of_study=kid.year_of_study
+        )        
+    except Subject.DoesNotExist:
+        sys.exit('Нет такого предмета')
     return subject
 
 
 def create_commendation(kid, subject, commendations, today):
     lesson = Lesson.objects.filter(
-        year_of_study__contains=kid.year_of_study,
-        group_letter__contains=kid.group_letter,
+        year_of_study=kid.year_of_study,
+        group_letter=kid.group_letter,
         subject=subject,
         date__lt=today
     ).order_by('-date').first()
@@ -105,11 +112,13 @@ def limiting_commendation_number(kid):
 
 
 if __name__ == '__main__':
-    schoolkid = get_argument()
+    args = get_arguments()
+    schoolkid = args.full_name
+    arg_subject = args.subject_name
     kid = find_kid(schoolkid)
     today = date.today().strftime('%y-%m-%d')
-    subject = get_subject(kid)
     fix_marks(kid)
     remove_chastisements(kid)
+    subject = get_subject(kid, arg_subject)
     create_commendation(kid, subject, commendations, today)
     limiting_commendation_number(kid)
