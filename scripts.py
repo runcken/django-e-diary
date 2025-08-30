@@ -87,8 +87,8 @@ def get_subject(kid, arg_subject):
 
 def create_commendation(kid, subject, commendations, today):
     lesson = Lesson.objects.filter(
-        year_of_study__contains=kid.year_of_study,
-        group_letter__contains=kid.group_letter,
+        year_of_study=kid.year_of_study,
+        group_letter=kid.group_letter,
         subject=subject,
         date__lt=today
     ).order_by('-date').first()
